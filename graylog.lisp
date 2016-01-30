@@ -17,6 +17,7 @@ HOSTNAME: According to GELF spec, it can be the name of the host, source or appl
         :hostname hostname))
 
 (defun connect-graylog-toplevel (&rest args)
+  "Connect to graylog and set the global connection"
   (setf *graylog-connection*
         (apply #'connect-graylog args)))
 

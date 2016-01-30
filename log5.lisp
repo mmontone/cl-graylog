@@ -1,5 +1,6 @@
 (defpackage :graylog/log5
-  (:use :cl))
+  (:use :cl)
+  (:export :graylog-sender))
 
 (in-package :graylog/log5)
 
