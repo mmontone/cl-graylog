@@ -10,12 +10,15 @@
   "Connect to a graylog instance
 
 HOSTNAME: According to GELF spec, it can be the name of the host, source or application that sent this message"
+  (list :socket
+        (usocket:socket-connect host port
+                                :protocol :datagram
+                                :element-type '(unsigned-byte 8))
+        :hostname hostname))
+
+(defun connect-graylog-toplevel (&rest args)
   (setf *graylog-connection*
-        (list :socket
-              (usocket:socket-connect host port
-                                      :protocol :datagram
-                                      :element-type '(unsigned-byte 8))
-              :hostname hostname)))
+        (apply #'connect-graylog args)))
 
 (defun call-with-graylog-connection (function &key (host "localhost")
                                                 (port *default-gelf-port*)
@@ -40,7 +43,8 @@ HOSTNAME: According to GELF spec, it can be the name of the host, source or appl
       (and error-p
            (error "Graylog: not connected"))))
 
-(defun graylog (message &rest args &key (level 1) backtrace host)
+(defun graylog (message &rest args &key (level 1) backtrace host
+                                     (connection (graylog-connection)))
   "Log to graylog using GELF
 
 https://www.graylog.org/resources/gelf/
@@ -91,9 +95,9 @@ every field you send and prefix with a _ (underscore) will be treated as an addi
 Libraries SHOULD not allow to send id as additional field (_id). Graylog server nodes omit this field automatically."
   (let* ((msg (salza2:compress-data
                (babel:string-to-octets
-                (print (json:encode-json-plist-to-string
-                 `(:version "1.0"
-                            :host ,(or host (getf (graylog-connection) :hostname))
+                (json:encode-json-plist-to-string
+                 `(:version "1.1"
+                            :host ,(or host (getf connection :hostname))
                             :|short_message| ,message
                             ,@(when backtrace
                                 (list :|full_message| backtrace))
@@ -102,10 +106,10 @@ Libraries SHOULD not allow to send id as additional field (_id). Graylog server 
                             ,@(loop
                                  :for key :in args :by #'cddr
                                  :for value :in (cdr args) :by #'cddr
-                                 :when (not (member key '(:host :level :backtrace)))
+                                 :when (not (member key '(:host :level :backtrace :connection)))
                                  :appending (list (read-from-string (format nil "|_~A|" key))
-                                                  value)))))
+                                                  value))))
                 :encoding :utf-8)
                'salza2:zlib-compressor)))
-    (usocket:socket-send (getf (graylog-connection) :socket)
+    (usocket:socket-send (getf connection :socket)
                          msg (length msg))))
