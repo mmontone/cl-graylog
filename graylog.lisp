@@ -45,7 +45,8 @@ HOSTNAME: According to GELF spec, it can be the name of the host, source or appl
            (error "Graylog: not connected"))))
 
 (defun graylog (message &rest args &key (level 1) backtrace host
-                                     (connection (graylog-connection)))
+                                     (connection (graylog-connection))
+                                     &allow-other-keys)
   "Log to graylog using GELF
 
 https://www.graylog.org/resources/gelf/

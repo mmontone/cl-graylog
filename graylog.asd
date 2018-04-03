@@ -9,4 +9,5 @@
 			   :usocket
                :babel
                :salza2
-               :cl-json))
+               :cl-json
+               :trivial-backtrace))
